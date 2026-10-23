@@ -92,7 +92,54 @@ export const handleFlexGet = AsyncWrapper(async (req, res) => {
     ResponseHandler.error(6, 404, `Flex GET dashboard/${action} not implemented`);
   }
 
-  // BE-40: dashboard/export-cases
+  if (collection === 'dashboard' && action === 'export-cases') {
+    const orgId = req.user.organizationId;
+    const { status, visaType, fromDate, toDate } = req.query;
+
+    const filter = { orgId, isDeleted: false };
+    if (status)   filter.status   = status;
+    if (visaType) filter.visaType = visaType;
+    if (fromDate || toDate) {
+      filter.createdAt = {};
+      if (fromDate) filter.createdAt.$gte = new Date(fromDate);
+      if (toDate)   filter.createdAt.$lte = new Date(toDate);
+    }
+
+    const cases = await services.ImmigrationCase.service.findAll({
+      filter,
+      options:  { sort: { createdAt: -1 }, limit: 10000 },
+      populate: [
+        { path: 'petitionerId',  select: 'companyName' },
+        { path: 'beneficiaryId', select: 'firstName lastName email' },
+      ],
+    });
+
+    const escape = (v) => {
+      if (v === null || v === undefined) return '';
+      const s = String(v).replace(/"/g, '""');
+      return s.includes(',') || s.includes('"') || s.includes('\n') ? `"${s}"` : s;
+    };
+    const fmtDate = (d) => (d ? new Date(d).toISOString().split('T')[0] : '');
+
+    const header = 'caseNumber,visaType,status,petitioner,beneficiary,beneficiaryEmail,filingDate,expiryDate';
+    const rows = (cases || []).map((c) =>
+      [
+        escape(c.caseNumber),
+        escape(c.visaType),
+        escape(c.status),
+        escape(c.petitionerId?.companyName),
+        escape(c.beneficiaryId ? `${c.beneficiaryId.firstName} ${c.beneficiaryId.lastName}` : ''),
+        escape(c.beneficiaryId?.email),
+        escape(fmtDate(c.filingDate)),
+        escape(fmtDate(c.expiryDate)),
+      ].join(',')
+    );
+
+    const csv = [header, ...rows].join('\n');
+    res.setHeader('Content-Type', 'text/csv');
+    res.setHeader('Content-Disposition', 'attachment; filename="cases-export.csv"');
+    return res.send(csv);
+  }
 
   // ── casedocuments ─────────────────────────────────────────────────────────
   if (collection === 'casedocuments') {
