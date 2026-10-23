@@ -42,6 +42,7 @@ beneficiarySchema.plugin(baseFieldsPlugin);
 
 beneficiarySchema.index({ orgId: 1, email: 1 }, { unique: true, sparse: true });
 beneficiarySchema.index({ orgId: 1, beneficiaryId: 1 });
+beneficiarySchema.index({ firstName: 'text', lastName: 'text', email: 'text' });
 
 const Beneficiary = mongoose.model('Beneficiary', beneficiarySchema);
 export default Beneficiary;

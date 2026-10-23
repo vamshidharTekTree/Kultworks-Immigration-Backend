@@ -49,6 +49,7 @@ const petitionerSchema = new mongoose.Schema(
 petitionerSchema.plugin(baseFieldsPlugin);
 
 petitionerSchema.index({ orgId: 1, companyName: 1 });
+petitionerSchema.index({ companyName: 'text', email: 'text' });
 
 const Petitioner = mongoose.model('Petitioner', petitionerSchema);
 export default Petitioner;

@@ -118,7 +118,48 @@ export const handleFlexGet = AsyncWrapper(async (req, res) => {
   }
 
   // ── beneficiaryportal ─────────────────────────────────────────────────────
-  // BE-39: beneficiaryportal/my-cases, beneficiaryportal/case-details
+  if (collection === 'beneficiaryportal') {
+    const { beneficiaryId, orgId: _portalOrgId } = req.portalUser;
+
+    if (action === 'my-cases') {
+      const cases = await services.ImmigrationCase.service.findAll({
+        filter:   { beneficiaryId, isDeleted: { $ne: true } },
+        options:  { sort: { createdAt: -1 }, limit: 100 },
+        populate: [{ path: 'petitionerId', select: 'companyName' }],
+      });
+      return res.json(ResponseHandler.success(1, cases));
+    }
+
+    if (action === 'case-details') {
+      const { caseId } = req.query;
+
+      const immigrationCase = await services.ImmigrationCase.service.findById({
+        id:      caseId,
+        populate: [
+          { path: 'petitionerId', select: 'companyName email phone' },
+        ],
+      });
+
+      if (String(immigrationCase.beneficiaryId) !== String(beneficiaryId)) {
+        ResponseHandler.error(7, 403, 'Forbidden');
+      }
+
+      const [documents, tasks] = await Promise.all([
+        services.CaseDocument.service.findAll({
+          filter:  { caseId, isDeleted: { $ne: true } },
+          options: { sort: { createdAt: -1 }, limit: 100 },
+        }),
+        services.CaseTask.service.findAll({
+          filter:  { caseId, isDeleted: { $ne: true } },
+          options: { sort: { dueDate: 1 }, limit: 100, select: 'title status dueDate priority' },
+        }),
+      ]);
+
+      return res.json(ResponseHandler.success(1, { ...immigrationCase, documents, tasks }));
+    }
+
+    ResponseHandler.error(6, 404, `Flex GET beneficiaryportal/${action} not implemented`);
+  }
 
   ResponseHandler.error(6, 404, `Flex GET ${collection}/${action} not implemented`);
 });
@@ -316,7 +357,54 @@ export const handleFlexPost = AsyncWrapper(async (req, res) => {
   }
 
   // ── beneficiaryportal ─────────────────────────────────────────────────────
-  // BE-39: beneficiaryportal/upload-document
+  if (collection === 'beneficiaryportal') {
+    if (action === 'upload-document') {
+      const { caseId, docType } = req.body;
+      const { beneficiaryId, orgId } = req.portalUser;
+
+      if (!req.file) ResponseHandler.error(21, 400, 'No file attached');
+      if (!caseId || !docType) ResponseHandler.error(21, 400, 'caseId and docType are required');
+
+      const immigrationCase = await services.ImmigrationCase.service.findById({ id: caseId });
+      if (String(immigrationCase.beneficiaryId) !== String(beneficiaryId)) {
+        ResponseHandler.error(7, 403, 'Forbidden');
+      }
+
+      const newDocument = await services.CaseDocument.service.create({
+        payload: {
+          caseId,
+          docType,
+          fileName:     req.file.filename,
+          originalName: req.file.originalname,
+          mimeType:     req.file.mimetype,
+          size:         req.file.size,
+          storagePath:  req.file.path,
+          uploadedBy:   beneficiaryId,
+          uploaderType: 'beneficiary',
+          status:       'pending',
+          orgId,
+          createdBy:    beneficiaryId,
+        },
+      });
+
+      await services.CaseTimeline.service.create({
+        payload: {
+          caseId,
+          eventType:    'document_uploaded',
+          description:  `Beneficiary uploaded: ${req.file.originalname}`,
+          performedBy:  beneficiaryId,
+          performerType: 'beneficiary',
+          metadata:     { docType, fileName: req.file.filename },
+          orgId,
+          createdBy:    beneficiaryId,
+        },
+      });
+
+      return res.json(ResponseHandler.success(1, newDocument));
+    }
+
+    ResponseHandler.error(6, 404, `Flex POST beneficiaryportal/${action} not implemented`);
+  }
 
   ResponseHandler.error(6, 404, `Flex POST ${collection}/${action} not implemented`);
 });

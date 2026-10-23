@@ -40,7 +40,11 @@ const routeAuth = (req, res, next) => {
 //    guardFlex skips these for non-flex collections → falls through to CRUD below
 router.get( '/:collection/:action', guardFlex, routeAuth, handleFlexGet);
 const maybeUpload = (req, res, next) => {
-  if (req.params.collection === 'casedocuments' && req.params.action === 'upload') {
+  const { collection, action } = req.params;
+  if (
+    (collection === 'casedocuments'    && action === 'upload') ||
+    (collection === 'beneficiaryportal' && action === 'upload-document')
+  ) {
     return uploadFile(req, res, next);
   }
   next();

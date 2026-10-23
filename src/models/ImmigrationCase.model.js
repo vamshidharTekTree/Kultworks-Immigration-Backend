@@ -51,6 +51,7 @@ immigrationCaseSchema.plugin(baseFieldsPlugin);
 immigrationCaseSchema.index({ orgId: 1, status: 1 });
 immigrationCaseSchema.index({ orgId: 1, beneficiaryId: 1 });
 immigrationCaseSchema.index({ orgId: 1, petitionerId: 1 });
+immigrationCaseSchema.index({ caseNumber: 'text', jobTitle: 'text', receiptNumber: 'text' });
 
 const ImmigrationCase = mongoose.model('ImmigrationCase', immigrationCaseSchema);
 export default ImmigrationCase;
