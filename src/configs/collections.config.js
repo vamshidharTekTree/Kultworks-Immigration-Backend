@@ -47,31 +47,40 @@ export const collectionConfig = {
 
   Petitioner: {
     fields: (payload) => ({
-      companyName:       payload.companyName,
-      ein:               payload.ein,
-      fein:              payload.fein,
-      address:           payload.address,
-      phone:             payload.phone,
-      email:             payload.email,
-      website:           payload.website,
-      industry:          payload.industry,
-      naicsCode:         payload.naicsCode,
-      numberOfEmployees: payload.numberOfEmployees,
-      type:              payload.type,
-      status:            payload.status,
-      primaryContact:    payload.primaryContact,
-      signatoryName:     payload.signatoryName,
-      signatoryTitle:    payload.signatoryTitle,
-      attorneyId:        payload.attorneyId,
-      notes:             payload.notes,
+      // Name — accept legalName (frontend) or companyName (legacy)
+      legalName:  payload.legalName || payload.companyName,
+      tradeName:  payload.tradeName  || undefined,
+      // Type & status
+      type:   payload.type   || undefined,
+      status: payload.status || 'Active',
+      // Identifiers
+      ein:  payload.ein  || undefined,
+      fein: payload.fein || undefined,
+      // Contact
+      phone:   payload.phone   || undefined,
+      email:   payload.email   || undefined,
+      website: payload.website || undefined,
+      // Flat address fields (form sends these directly)
+      street:  payload.street  || undefined,
+      city:    payload.city    || undefined,
+      state:   payload.state   || undefined,
+      zip:     payload.zip     || undefined,
+      country: payload.country || undefined,
+      // Classification
+      industry:        payload.industry        || undefined,
+      naicsCode:       payload.naicsCode       || undefined,
+      employeeCount:   payload.employeeCount   || undefined,
+      yearEstablished: payload.yearEstablished || undefined,
+      description:     payload.description     || undefined,
+      // Contacts
+      primaryContact: payload.primaryContact || undefined,
+      signatoryName:  payload.signatoryName  || undefined,
+      signatoryTitle: payload.signatoryTitle || undefined,
+      attorneyId:     payload.attorneyId     || undefined,
+      notes:          payload.notes          || undefined,
     }),
-    validate: (payload) => !payload.companyName,
-    response: (doc) => ({
-      id:           doc._id,
-      petitionerId: doc.petitionerId,
-      companyName:  doc.companyName,
-      status:       doc.status,
-    }),
+    validate: (payload) => !payload.legalName && !payload.companyName,
+    response: (doc) => doc,
   },
 
   ImmigrationCase: {
