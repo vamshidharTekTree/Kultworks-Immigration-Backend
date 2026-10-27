@@ -1,7 +1,7 @@
 export const populateConfig = {
   ImmigrationCase: [
-    { path: 'petitionerId',  select: 'companyName email petitionerId' },
-    { path: 'beneficiaryId', select: 'firstName lastName email beneficiaryId currentStatus' },
+    { path: 'petitionerId',  select: 'legalName email' },
+    { path: 'beneficiaryId', select: 'firstName lastName email currentWorkStatus' },
     { path: 'attorneyId',    select: 'firstName lastName email firmName' },
   ],
   CaseForm: [

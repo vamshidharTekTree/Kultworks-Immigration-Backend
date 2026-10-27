@@ -85,8 +85,11 @@ export const collectionConfig = {
 
   ImmigrationCase: {
     fields: (payload) => ({
-      visaType:      payload.visaType,
-      caseType:      payload.caseType,
+      visaType:  payload.visaType,
+      // caseType is the petition sub-type (new/extension/transfer/amendment/renewal), not the visa type
+      caseType:  ['new', 'extension', 'transfer', 'amendment', 'renewal'].includes(payload.caseType)
+        ? payload.caseType
+        : undefined,
       status:        payload.status,
       stage:         payload.stage,
       petitionerId:  payload.petitionerId,
@@ -108,13 +111,7 @@ export const collectionConfig = {
       assignedTo:    payload.assignedTo,
     }),
     validate: (payload) => !payload.visaType || !payload.petitionerId || !payload.beneficiaryId,
-    response: (doc) => ({
-      id:         doc._id,
-      caseNumber: doc.caseNumber,
-      visaType:   doc.visaType,
-      status:     doc.status,
-      stage:      doc.stage,
-    }),
+    response: (doc) => doc,
   },
 
   CaseForm: {
@@ -152,12 +149,7 @@ export const collectionConfig = {
       notes:        payload.notes,
     }),
     validate: (payload) => !payload.caseId || !payload.docType,
-    response: (doc) => ({
-      id:       doc._id,
-      docType:  doc.docType,
-      fileName: doc.fileName,
-      status:   doc.status,
-    }),
+    response: (doc) => doc,
   },
 
   CaseTask: {
@@ -174,12 +166,7 @@ export const collectionConfig = {
       category:    payload.category,
     }),
     validate: (payload) => !payload.caseId || !payload.title,
-    response: (doc) => ({
-      id:      doc._id,
-      title:   doc.title,
-      status:  doc.status,
-      dueDate: doc.dueDate,
-    }),
+    response: (doc) => doc,
   },
 
   CaseNote: {
@@ -193,12 +180,7 @@ export const collectionConfig = {
       attachments: payload.attachments,
     }),
     validate: (payload) => !payload.caseId || !payload.content,
-    response: (doc) => ({
-      id:        doc._id,
-      content:   doc.content,
-      noteType:  doc.noteType,
-      createdAt: doc.createdAt,
-    }),
+    response: (doc) => doc,
   },
 
   CaseTimeline: {
@@ -214,12 +196,7 @@ export const collectionConfig = {
       metadata:      payload.metadata,
     }),
     validate: (payload) => !payload.caseId || !payload.eventType || !payload.description,
-    response: (doc) => ({
-      id:          doc._id,
-      eventType:   doc.eventType,
-      description: doc.description,
-      createdAt:   doc.createdAt,
-    }),
+    response: (doc) => doc,
   },
 
   Attorney: {
