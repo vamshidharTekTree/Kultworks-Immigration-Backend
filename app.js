@@ -14,12 +14,16 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const app = express();
 
 export const corsOptions = {
-  origin: corsOrigin,
+  // In local dev reflect any origin so any frontend port works.
+  // In staging/production restrict to the explicit CORS_ORIGIN list.
+  origin: nodeEnv === 'local'
+    ? (origin, cb) => cb(null, origin || true)
+    : corsOrigin,
   methods: ['GET', 'POST', 'PATCH', 'DELETE', 'PUT', 'OPTIONS'],
   allowedHeaders: [
     'Origin', 'X-Requested-With', 'Content-Type', 'Accept',
     'Authorization', 'x-access-token', 'x-portal-token',
-    'x-internal-secret', 'x-device-type',
+    'x-internal-secret', 'x-device-type', 'x-org-id',
   ],
   exposedHeaders: ['x-app-version'],
   credentials: true,

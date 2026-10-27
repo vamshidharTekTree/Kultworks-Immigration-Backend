@@ -14,10 +14,10 @@ export const handleGet = AsyncWrapper(async (req, res) => {
   const service = getService(collection);
   const orgId = req.user.organizationId;
 
-  // Single-item fetch when an id is in the path
+  // Single-item fetch when an id is in the path (respects soft-delete)
   if (id) {
-    const doc = await service.findById({
-      id,
+    const doc = await service.findOne({
+      filter: { _id: id, orgId, isDeleted: false },
       populate: populateConfig[collection],
     });
     return res.json(ResponseHandler.success(1, doc));
@@ -31,6 +31,7 @@ export const handleGet = AsyncWrapper(async (req, res) => {
   const baseFilter = { orgId, isDeleted: false };
 
   let docs;
+  let total = 0;
   if (search) {
     docs = await service.textSearch({
       searchString: search,
@@ -38,15 +39,19 @@ export const handleGet = AsyncWrapper(async (req, res) => {
       options: { limit, skip },
       populate: populateConfig[collection],
     });
+    total = docs.length;
   } else {
-    docs = await service.findAll({
-      filter:  baseFilter,
-      options: { limit, skip, sort: { createdAt: -1 } },
-      populate: populateConfig[collection],
-    });
+    [docs, total] = await Promise.all([
+      service.findAll({
+        filter:  baseFilter,
+        options: { limit, skip, sort: { createdAt: -1 } },
+        populate: populateConfig[collection],
+      }),
+      service.count({ filter: baseFilter }),
+    ]);
   }
 
-  res.json(ResponseHandler.success(1, docs));
+  res.json({ ...ResponseHandler.success(1, docs), total });
 });
 
 export const handlePost = AsyncWrapper(async (req, res) => {

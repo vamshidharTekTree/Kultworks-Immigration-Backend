@@ -11,6 +11,11 @@ class MongooseService {
     try {
       return await operation();
     } catch (err) {
+      // Duplicate key — return a friendly sm:10 instead of raw MongoDB message
+      if (err.code === 11000) {
+        const field = Object.keys(err.keyPattern || {})[0] || 'value';
+        ResponseHandler.error(10, 409, `A record with this ${field} already exists`);
+      }
       if (
         err instanceof ResponseError ||
         err instanceof mongoose.Error.CastError ||

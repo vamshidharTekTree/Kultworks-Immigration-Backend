@@ -1,31 +1,48 @@
 export const collectionConfig = {
   Beneficiary: {
     fields: (payload) => ({
-      firstName:      payload.firstName,
-      lastName:       payload.lastName,
-      email:          payload.email,
-      phone:          payload.phone,
-      dateOfBirth:    payload.dateOfBirth,
-      gender:         payload.gender,
-      nationality:    payload.nationality,
-      countryOfBirth: payload.countryOfBirth,
-      passportNumber: payload.passportNumber,
-      passportExpiry: payload.passportExpiry,
-      alienNumber:    payload.alienNumber,
-      ssn:            payload.ssn,
-      address:        payload.address,
-      currentStatus:  payload.currentStatus,
-      priorityDate:   payload.priorityDate,
-      notes:          payload.notes,
+      // Identity
+      petitionerId:  payload.petitionerId  || undefined,
+      // Name
+      firstName:     payload.firstName,
+      middleName:    payload.middleName    || undefined,
+      lastName:      payload.lastName,
+      // Contact
+      email:         payload.email,
+      phone:         payload.phone         || undefined,
+      // Personal
+      dateOfBirth:      payload.dateOfBirth      || undefined,
+      gender:           payload.gender            || undefined,
+      nationality:      payload.nationality       || undefined,
+      countryOfBirth:   payload.countryOfBirth    || undefined,
+      cityOfBirth:      payload.cityOfBirth       || undefined,
+      maritalStatus:    payload.maritalStatus      || undefined,
+      // Work & tax
+      currentWorkStatus: payload.currentWorkStatus || undefined,
+      taxTerm:           payload.taxTerm           || undefined,
+      dataSource:        payload.dataSource        || 'Manual',
+      // Addresses
+      address:        payload.address        || undefined,
+      mailingAddress: payload.mailingAddress || undefined,
+      // Passport
+      passportNumber:  payload.passportNumber  || undefined,
+      passportCountry: payload.passportCountry || undefined,
+      passportExpiry:  payload.passportExpiry  || undefined,
+      // I-94
+      i94Number:           payload.i94Number           || undefined,
+      i94AdmitUntil:       payload.i94AdmitUntil       || undefined,
+      i94ClassOfAdmission: payload.i94ClassOfAdmission || undefined,
+      // US government numbers (last 4 of SSN only)
+      ssnMasked: payload.ssnMasked || undefined,
+      aNumber:   payload.aNumber   || undefined,
+      // Arrays
+      education: Array.isArray(payload.education) ? payload.education : undefined,
+      // Legacy fields
+      priorityDate: payload.priorityDate || undefined,
+      notes:        payload.notes        || undefined,
     }),
-    validate: (payload) => !payload.firstName || !payload.email,
-    response: (doc) => ({
-      id:            doc._id,
-      beneficiaryId: doc.beneficiaryId,
-      name:          `${doc.firstName} ${doc.lastName}`,
-      email:         doc.email,
-      currentStatus: doc.currentStatus,
-    }),
+    validate: (payload) => !payload.firstName || !payload.lastName || !payload.email,
+    response: (doc) => doc,
   },
 
   Petitioner: {
