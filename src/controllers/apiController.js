@@ -28,7 +28,15 @@ export const handleGet = AsyncWrapper(async (req, res) => {
   const skip   = (page - 1) * limit;
   const search = req.query.search;
 
+  const config = collectionConfig[collection] ?? {};
   const baseFilter = { orgId, isDeleted: false };
+  // Apply collection-declared safe filter fields from query params
+  if (config.filterFields) {
+    for (const field of config.filterFields) {
+      const v = req.query[field];
+      if (v !== undefined && v !== '') baseFilter[field] = v;
+    }
+  }
 
   let docs;
   let total = 0;
