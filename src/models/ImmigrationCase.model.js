@@ -18,7 +18,12 @@ const immigrationCaseSchema = new mongoose.Schema(
     caseType:      { type: String, enum: ['new', 'extension', 'transfer', 'amendment', 'renewal'] },
     status:        {
       type:    String,
-      enum:    ['draft', 'in_progress', 'submitted', 'rfe', 'approved', 'denied', 'withdrawn', 'closed'],
+      enum:    [
+        // internal / pipeline values
+        'draft', 'in_progress', 'submitted', 'rfe', 'approved', 'denied', 'withdrawn', 'closed',
+        // USCIS receipt-status labels sent from ReceiptStatus tab
+        'Open', 'Filed', 'RFE Issued', 'NOID Issued', 'Approved', 'Denied', 'Withdrawn', 'Closed',
+      ],
       default: 'draft',
     },
     stage:         { type: String },
@@ -29,10 +34,13 @@ const immigrationCaseSchema = new mongoose.Schema(
     priorityDate:  { type: Date },
     filingDate:    { type: Date },
     receiptNumber: { type: String },
+    filedDate:     { type: Date },   // alias for filingDate (used by ReceiptStatus tab)
     approvalDate:  { type: Date },
     expiryDate:    { type: Date },
     validFrom:     { type: Date },
     validTo:       { type: Date },
+    validityFrom:  { type: Date },   // alias for validFrom (used by ReceiptStatus tab)
+    validityTo:    { type: Date },   // alias for validTo (used by ReceiptStatus tab)
     workLocation:  { type: workLocationSchema },
     jobTitle:      { type: String },
     socCode:       { type: String },

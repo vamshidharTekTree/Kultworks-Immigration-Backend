@@ -57,6 +57,7 @@ router.patch('/:collection/:action', guardFlex, routeAuth, handleFlexPatch);
 router.use(AuthenticateReq);
 
 router.get(   '/:collection',      handleGet);              // list
+router.get(   '/:collection/:id',  handleGet);              // get by id
 router.post(  '/:collection',      uploadFile, handlePost); // create
 router.patch( '/:collection/:id',  handlePatch);            // update by id
 router.delete('/:collection/:id',  handleDelete);           // soft-delete by id
