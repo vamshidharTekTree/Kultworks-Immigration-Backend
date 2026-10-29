@@ -39,7 +39,18 @@ const routeAuth = (req, res, next) => {
 // ── 1. Flex routes  /:collection/:action ─────────────────────────────────────
 //    guardFlex skips these for non-flex collections → falls through to CRUD below
 router.get( '/:collection/:action', guardFlex, routeAuth, handleFlexGet);
-router.post('/:collection/:action', guardFlex, routeAuth, handleFlexPost);
+const maybeUpload = (req, res, next) => {
+  const { collection, action } = req.params;
+  if (
+    (collection === 'casedocuments'    && action === 'upload') ||
+    (collection === 'beneficiaryportal' && action === 'upload-document')
+  ) {
+    return uploadFile(req, res, next);
+  }
+  next();
+};
+
+router.post('/:collection/:action', guardFlex, routeAuth, maybeUpload, handleFlexPost);
 router.patch('/:collection/:action', guardFlex, routeAuth, handleFlexPatch);
 
 // ── 2. Generic CRUD  (all require staff JWT) ──────────────────────────────────
