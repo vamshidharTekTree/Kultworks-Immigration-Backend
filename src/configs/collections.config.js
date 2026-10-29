@@ -1,66 +1,95 @@
 export const collectionConfig = {
   Beneficiary: {
     fields: (payload) => ({
-      firstName:      payload.firstName,
-      lastName:       payload.lastName,
-      email:          payload.email,
-      phone:          payload.phone,
-      dateOfBirth:    payload.dateOfBirth,
-      gender:         payload.gender,
-      nationality:    payload.nationality,
-      countryOfBirth: payload.countryOfBirth,
-      passportNumber: payload.passportNumber,
-      passportExpiry: payload.passportExpiry,
-      alienNumber:    payload.alienNumber,
-      ssn:            payload.ssn,
-      address:        payload.address,
-      currentStatus:  payload.currentStatus,
-      priorityDate:   payload.priorityDate,
-      notes:          payload.notes,
+      // Identity
+      petitionerId:  payload.petitionerId  || undefined,
+      // Name
+      firstName:     payload.firstName,
+      middleName:    payload.middleName    || undefined,
+      lastName:      payload.lastName,
+      // Contact
+      email:         payload.email,
+      phone:         payload.phone         || undefined,
+      // Personal
+      dateOfBirth:      payload.dateOfBirth      || undefined,
+      gender:           payload.gender            || undefined,
+      nationality:      payload.nationality       || undefined,
+      countryOfBirth:   payload.countryOfBirth    || undefined,
+      cityOfBirth:      payload.cityOfBirth       || undefined,
+      maritalStatus:    payload.maritalStatus      || undefined,
+      // Work & tax
+      currentWorkStatus: payload.currentWorkStatus || undefined,
+      taxTerm:           payload.taxTerm           || undefined,
+      dataSource:        payload.dataSource        || 'Manual',
+      // Addresses
+      address:        payload.address        || undefined,
+      mailingAddress: payload.mailingAddress || undefined,
+      // Passport
+      passportNumber:  payload.passportNumber  || undefined,
+      passportCountry: payload.passportCountry || undefined,
+      passportExpiry:  payload.passportExpiry  || undefined,
+      // I-94
+      i94Number:           payload.i94Number           || undefined,
+      i94AdmitUntil:       payload.i94AdmitUntil       || undefined,
+      i94ClassOfAdmission: payload.i94ClassOfAdmission || undefined,
+      // US government numbers (last 4 of SSN only)
+      ssnMasked: payload.ssnMasked || undefined,
+      aNumber:   payload.aNumber   || undefined,
+      // Arrays
+      education: Array.isArray(payload.education) ? payload.education : undefined,
+      // Legacy fields
+      priorityDate: payload.priorityDate || undefined,
+      notes:        payload.notes        || undefined,
     }),
-    validate: (payload) => !payload.firstName || !payload.email,
-    response: (doc) => ({
-      id:            doc._id,
-      beneficiaryId: doc.beneficiaryId,
-      name:          `${doc.firstName} ${doc.lastName}`,
-      email:         doc.email,
-      currentStatus: doc.currentStatus,
-    }),
+    validate: (payload) => !payload.firstName || !payload.lastName || !payload.email,
+    response: (doc) => doc,
   },
 
   Petitioner: {
     fields: (payload) => ({
-      companyName:       payload.companyName,
-      ein:               payload.ein,
-      fein:              payload.fein,
-      address:           payload.address,
-      phone:             payload.phone,
-      email:             payload.email,
-      website:           payload.website,
-      industry:          payload.industry,
-      naicsCode:         payload.naicsCode,
-      numberOfEmployees: payload.numberOfEmployees,
-      type:              payload.type,
-      status:            payload.status,
-      primaryContact:    payload.primaryContact,
-      signatoryName:     payload.signatoryName,
-      signatoryTitle:    payload.signatoryTitle,
-      attorneyId:        payload.attorneyId,
-      notes:             payload.notes,
+      // Name — accept legalName (frontend) or companyName (legacy)
+      legalName:  payload.legalName || payload.companyName,
+      tradeName:  payload.tradeName  || undefined,
+      // Type & status
+      type:   payload.type   || undefined,
+      status: payload.status || 'Active',
+      // Identifiers
+      ein:  payload.ein  || undefined,
+      fein: payload.fein || undefined,
+      // Contact
+      phone:   payload.phone   || undefined,
+      email:   payload.email   || undefined,
+      website: payload.website || undefined,
+      // Flat address fields (form sends these directly)
+      street:  payload.street  || undefined,
+      city:    payload.city    || undefined,
+      state:   payload.state   || undefined,
+      zip:     payload.zip     || undefined,
+      country: payload.country || undefined,
+      // Classification
+      industry:        payload.industry        || undefined,
+      naicsCode:       payload.naicsCode       || undefined,
+      employeeCount:   payload.employeeCount   || undefined,
+      yearEstablished: payload.yearEstablished || undefined,
+      description:     payload.description     || undefined,
+      // Contacts
+      primaryContact: payload.primaryContact || undefined,
+      signatoryName:  payload.signatoryName  || undefined,
+      signatoryTitle: payload.signatoryTitle || undefined,
+      attorneyId:     payload.attorneyId     || undefined,
+      notes:          payload.notes          || undefined,
     }),
-    validate: (payload) => !payload.companyName,
-    response: (doc) => ({
-      id:           doc._id,
-      petitionerId: doc.petitionerId,
-      companyName:  doc.companyName,
-      status:       doc.status,
-    }),
+    validate: (payload) => !payload.legalName && !payload.companyName,
+    response: (doc) => doc,
   },
 
   ImmigrationCase: {
     fields: (payload) => ({
-      visaType:      payload.visaType,
-      caseType:      payload.caseType,
+      visaType:  payload.visaType,
+      // caseType is the petition sub-type (new/extension/transfer/amendment/renewal), not the visa type
+      caseType:  ['new', 'extension', 'transfer', 'amendment', 'renewal'].includes(payload.caseType)
+        ? payload.caseType
+        : undefined,
       status:        payload.status,
       stage:         payload.stage,
       petitionerId:  payload.petitionerId,
@@ -82,13 +111,7 @@ export const collectionConfig = {
       assignedTo:    payload.assignedTo,
     }),
     validate: (payload) => !payload.visaType || !payload.petitionerId || !payload.beneficiaryId,
-    response: (doc) => ({
-      id:         doc._id,
-      caseNumber: doc.caseNumber,
-      visaType:   doc.visaType,
-      status:     doc.status,
-      stage:      doc.stage,
-    }),
+    response: (doc) => doc,
   },
 
   CaseForm: {
@@ -100,7 +123,10 @@ export const collectionConfig = {
       version:  payload.version,
       notes:    payload.notes,
     }),
-    validate: (payload) => !payload.caseId || !payload.formType,
+    // Templates (questionnaire_template) are not case-specific — only responses require a caseId
+    validate: (payload) => !payload.formType || (payload.formType !== 'questionnaire_template' && !payload.caseId),
+    // Safe query-param filters the GET list endpoint may apply
+    filterFields: ['formType', 'caseId', 'status'],
     response: (doc) => ({
       id:       doc._id,
       formType: doc.formType,
@@ -126,12 +152,7 @@ export const collectionConfig = {
       notes:        payload.notes,
     }),
     validate: (payload) => !payload.caseId || !payload.docType,
-    response: (doc) => ({
-      id:       doc._id,
-      docType:  doc.docType,
-      fileName: doc.fileName,
-      status:   doc.status,
-    }),
+    response: (doc) => doc,
   },
 
   CaseTask: {
@@ -148,12 +169,7 @@ export const collectionConfig = {
       category:    payload.category,
     }),
     validate: (payload) => !payload.caseId || !payload.title,
-    response: (doc) => ({
-      id:      doc._id,
-      title:   doc.title,
-      status:  doc.status,
-      dueDate: doc.dueDate,
-    }),
+    response: (doc) => doc,
   },
 
   CaseNote: {
@@ -167,12 +183,7 @@ export const collectionConfig = {
       attachments: payload.attachments,
     }),
     validate: (payload) => !payload.caseId || !payload.content,
-    response: (doc) => ({
-      id:        doc._id,
-      content:   doc.content,
-      noteType:  doc.noteType,
-      createdAt: doc.createdAt,
-    }),
+    response: (doc) => doc,
   },
 
   CaseTimeline: {
@@ -188,12 +199,7 @@ export const collectionConfig = {
       metadata:      payload.metadata,
     }),
     validate: (payload) => !payload.caseId || !payload.eventType || !payload.description,
-    response: (doc) => ({
-      id:          doc._id,
-      eventType:   doc.eventType,
-      description: doc.description,
-      createdAt:   doc.createdAt,
-    }),
+    response: (doc) => doc,
   },
 
   Attorney: {
