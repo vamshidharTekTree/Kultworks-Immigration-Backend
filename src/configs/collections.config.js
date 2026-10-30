@@ -127,8 +127,11 @@ export const collectionConfig = {
       version:  payload.version,
       notes:    payload.notes,
     }),
-    // Templates + questionnaire responses are not case-specific — only other form responses require a caseId
-    validate: (payload) => !payload.formType || (!['questionnaire_template', 'workflow_template', 'questionnaire_response'].includes(payload.formType) && !payload.caseId),
+    // Templates, settings docs, and questionnaire responses are not case-specific — all others require caseId
+    validate: (payload) => !payload.formType || (
+      !['questionnaire_template', 'workflow_template', 'questionnaire_response', 'letter_template', 'alert_rule', 'role_matrix'].includes(payload.formType)
+      && !payload.caseId
+    ),
     // Safe query-param filters the GET list endpoint may apply
     filterFields: ['formType', 'caseId', 'status'],
     response: (doc) => ({
@@ -230,10 +233,19 @@ export const collectionConfig = {
     }),
     validate: (payload) => !payload.firstName || !payload.email,
     response: (doc) => ({
-      id:       doc._id,
-      name:     `${doc.firstName} ${doc.lastName}`,
-      email:    doc.email,
-      firmName: doc.firmName,
+      id:             doc._id,
+      name:           `${doc.firstName} ${doc.lastName}`.trim(),
+      firstName:      doc.firstName,
+      lastName:       doc.lastName,
+      email:          doc.email,
+      phone:          doc.phone,
+      barNumber:      doc.barNumber,
+      firmName:       doc.firmName,
+      firmAddress:    doc.firmAddress,
+      licenseState:   doc.licenseState,
+      specialization: doc.specialization,
+      status:         doc.status,
+      notes:          doc.notes,
     }),
   },
 
