@@ -37,6 +37,12 @@ export const handleGet = AsyncWrapper(async (req, res) => {
       if (v !== undefined && v !== '') baseFilter[field] = v;
     }
   }
+  if (config.rangeFilterFields) {
+    for (const [param, field] of Object.entries(config.rangeFilterFields)) {
+      const v = req.query[param];
+      if (v !== undefined && v !== '') baseFilter[field] = { $lte: new Date(v) };
+    }
+  }
 
   let docs;
   let total = 0;

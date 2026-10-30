@@ -152,6 +152,8 @@ export const collectionConfig = {
       notes:        payload.notes,
     }),
     validate: (payload) => !payload.caseId || !payload.docType,
+    filterFields:      ['caseId', 'status', 'docType'],
+    rangeFilterFields: { expiryBefore: 'expiryDate' },
     response: (doc) => doc,
   },
 

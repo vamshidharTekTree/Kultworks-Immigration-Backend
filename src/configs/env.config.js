@@ -40,8 +40,14 @@ export const corsOrigin = process.env.CORS_ORIGIN
   ? process.env.CORS_ORIGIN.split(',').map(normalizeOrigin).filter(Boolean)
   : [];
 
-export const uploadDir = optional('UPLOAD_DIR', 'uploads');
+export const uploadDir    = optional('UPLOAD_DIR', 'uploads');
 export const maxFileSizeMb = Number(optional('MAX_FILE_SIZE_MB', '10')) || 10;
+
+export const awsCreds = {
+  bucket:     optional('AWS_BUCKET_NAME'),
+  region:     optional('AWS_REGION', 'us-east-1'),
+  ssoProfile: optional('AWS_SSO_PROFILE'),
+};
 export const logLevel = optional('LOG_LEVEL', 'info');
 
 export const smtpHost = optional('SMTP_HOST');

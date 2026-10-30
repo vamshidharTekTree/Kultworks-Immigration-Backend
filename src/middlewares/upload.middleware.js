@@ -1,6 +1,6 @@
-import path from 'path';
-import multer from 'multer';
-import { uploadDir, maxFileSizeMb } from '../configs/env.config.js';
+import path    from 'path';
+import multer  from 'multer';
+import { maxFileSizeMb } from '../configs/env.config.js';
 
 const ACCEPTED_MIMETYPES = new Set([
   'application/pdf',
@@ -10,11 +10,6 @@ const ACCEPTED_MIMETYPES = new Set([
   'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
 ]);
 
-const storage = multer.diskStorage({
-  destination: (_req, _file, cb) => cb(null, uploadDir),
-  filename:    (_req, file, cb) => cb(null, `${Date.now()}-${file.originalname}`),
-});
-
 const fileFilter = (_req, file, cb) => {
   if (ACCEPTED_MIMETYPES.has(file.mimetype)) {
     cb(null, true);
@@ -23,8 +18,9 @@ const fileFilter = (_req, file, cb) => {
   }
 };
 
+// Memory storage — file is available as req.file.buffer for S3 upload
 export const uploadFile = multer({
-  storage,
-  limits: { fileSize: maxFileSizeMb * 1024 * 1024 },
+  storage:  multer.memoryStorage(),
+  limits:   { fileSize: maxFileSizeMb * 1024 * 1024 },
   fileFilter,
 }).single('file');

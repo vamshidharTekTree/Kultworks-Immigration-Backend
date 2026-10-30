@@ -7,6 +7,7 @@ import PortalUser from '../models/PortalUser.model.js';
 import Counter from '../models/Counter.model.js';
 import { services } from '../utils/dbRegistry.util.js';
 import logger from '../utils/logger.util.js';
+import { putFileToS3, getSignedFileUrl, SIGNED_URL_EXPIRY } from '../services/s3.service.js';
 
 // Flex handlers dispatch on { collection, action } from URL params.
 
@@ -158,6 +159,22 @@ export const handleFlexGet = AsyncWrapper(async (req, res) => {
         caseId,
         formData: caseForm.formData,
       }));
+    }
+
+    if (action === 'signed-url') {
+      const { docId } = req.query;
+      const orgId     = req.user.organizationId;
+
+      if (!docId) ResponseHandler.error(21, 400, 'docId query param is required');
+
+      const doc = await services.CaseDocument.service.findOne({
+        filter: { _id: docId, orgId, isDeleted: false },
+      });
+      if (!doc)              ResponseHandler.error(6, 404, 'Document not found');
+      if (!doc.storagePath)  ResponseHandler.error(21, 400, 'Document has no S3 key — it may have been uploaded before S3 was enabled');
+
+      const signedUrl = await getSignedFileUrl(doc.storagePath, doc.originalName || doc.fileName);
+      return res.json(ResponseHandler.success(1, { signedUrl, expiresIn: SIGNED_URL_EXPIRY }));
     }
 
     ResponseHandler.error(6, 404, `Flex GET casedocuments/${action} not implemented`);
@@ -359,25 +376,35 @@ export const handleFlexPost = AsyncWrapper(async (req, res) => {
   // ── casedocuments ─────────────────────────────────────────────────────────
   if (collection === 'casedocuments') {
     if (action === 'upload') {
-      const { caseId, docType } = req.body;
+      const { caseId, docType, expiryDate, notes } = req.body;
       const orgId  = req.user.organizationId;
       const userId = req.user.userId;
 
       if (!req.file) ResponseHandler.error(21, 400, 'No file attached');
       if (!caseId || !docType) ResponseHandler.error(21, 400, 'caseId and docType are required');
 
+      const fileName = `${Date.now()}-${req.file.originalname.replace(/\s+/g, '_')}`;
+      const { storageKey, storageUrl } = await putFileToS3(
+        `immigration/${orgId}/${caseId}`,
+        fileName,
+        req.file,
+      );
+
       const newDocument = await services.CaseDocument.service.create({
         payload: {
           caseId,
           docType,
-          fileName:     req.file.filename,
+          fileName,
           originalName: req.file.originalname,
           mimeType:     req.file.mimetype,
           size:         req.file.size,
-          storagePath:  req.file.path,
+          storagePath:  storageKey,
+          storageUrl,
           uploadedBy:   userId,
           uploaderType: 'staff',
           status:       'pending',
+          ...(expiryDate ? { expiryDate: new Date(expiryDate) } : {}),
+          ...(notes      ? { notes }                            : {}),
           orgId,
           createdBy:    userId,
         },
