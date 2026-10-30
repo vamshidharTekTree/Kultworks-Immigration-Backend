@@ -241,6 +241,24 @@ app.post(`/${nodeEnv}/bulk-sync-integration`, async (req, res) => {
   }
 });
 
+// ── Staff users read (synced via sync-user) ──────────────────────────────────
+app.get(`/${nodeEnv}/users`, async (req, res) => {
+  try {
+    if (!mongoose.connection?.db) return res.status(503).json({ message: 'Database not connected' });
+    const orgId = req.query.orgId;
+    const role  = req.query.role;
+    const filter = {};
+    if (orgId) filter.orgId = orgId;
+    if (role)  filter.role  = role;
+    const col   = mongoose.connection.collection('users');
+    const users = await col.find(filter).sort({ firstName: 1 }).toArray();
+    res.json({ success: true, data: users, total: users.length });
+  } catch (err) {
+    logger.error('get-users failed', { message: err.message });
+    res.status(500).json({ message: err.message });
+  }
+});
+
 app.get(`/${nodeEnv}/menus`, async (req, res) => {
   try {
     if (!mongoose.connection?.db) return res.status(503).json({ message: 'Database not connected' });
