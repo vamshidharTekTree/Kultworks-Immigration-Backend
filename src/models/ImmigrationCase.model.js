@@ -15,7 +15,7 @@ const immigrationCaseSchema = new mongoose.Schema(
   {
     caseNumber:    { type: String, unique: true, sparse: true },
     visaType:      { type: String, required: true },
-    caseType:      { type: String, enum: ['new', 'extension', 'transfer', 'amendment', 'renewal'] },
+    caseType:      { type: String, enum: ['new', 'extension', 'transfer', 'amendment', 'renewal', 'lca', 'green_card_group', 'cap_registration'] },
     status:        {
       type:    String,
       enum:    [
@@ -28,7 +28,8 @@ const immigrationCaseSchema = new mongoose.Schema(
     },
     stage:         { type: String },
     petitionerId:  { type: mongoose.Schema.Types.ObjectId, ref: 'Petitioner', required: true },
-    beneficiaryId: { type: mongoose.Schema.Types.ObjectId, ref: 'Beneficiary', required: true },
+    // LCA records are petitioner-level; beneficiaryId is optional for caseType='lca'
+    beneficiaryId: { type: mongoose.Schema.Types.ObjectId, ref: 'Beneficiary', required: function () { return this.caseType !== 'lca'; } },
     attorneyId:    { type: mongoose.Schema.Types.ObjectId, ref: 'Attorney' },
     priority:      { type: String, enum: ['regular', 'premium'], default: 'regular' },
     priorityDate:  { type: Date },
@@ -48,6 +49,8 @@ const immigrationCaseSchema = new mongoose.Schema(
     lcaNumber:     { type: String },
     notes:         { type: String },
     tags:          [{ type: String }],
+    // Stores type-specific extra fields (LCA: prevailingWage/offeredWage/worker*; GC: chargeability/perm/i140/i485)
+    metadata:      { type: mongoose.Schema.Types.Mixed },
     assignedTo:    { type: String },
     lastActivityAt: { type: Date },
   },

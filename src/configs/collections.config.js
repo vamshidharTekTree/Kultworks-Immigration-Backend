@@ -86,8 +86,8 @@ export const collectionConfig = {
   ImmigrationCase: {
     fields: (payload) => ({
       visaType:  payload.visaType,
-      // caseType is the petition sub-type (new/extension/transfer/amendment/renewal), not the visa type
-      caseType:  ['new', 'extension', 'transfer', 'amendment', 'renewal'].includes(payload.caseType)
+      // caseType: petition sub-types + proxy types for lca / green_card_group / cap_registration
+      caseType:  ['new', 'extension', 'transfer', 'amendment', 'renewal', 'lca', 'green_card_group', 'cap_registration'].includes(payload.caseType)
         ? payload.caseType
         : undefined,
       status:        payload.status,
@@ -109,8 +109,12 @@ export const collectionConfig = {
       notes:         payload.notes,
       tags:          payload.tags,
       assignedTo:    payload.assignedTo,
+      metadata:      payload.metadata,
     }),
-    validate: (payload) => !payload.visaType || !payload.petitionerId || !payload.beneficiaryId,
+    // LCA has no beneficiaryId; cap_registration always sets visaType='H-1B'; other types require all three
+    validate: (payload) => !payload.petitionerId || (payload.caseType !== 'lca' && (!payload.visaType || !payload.beneficiaryId)),
+    filterFields: ['status', 'visaType', 'caseType', 'petitionerId', 'beneficiaryId', 'stage', 'assignedTo'],
+    rangeFilterFields: { expiryBefore: 'expiryDate', filingDateBefore: 'filingDate' },
     response: (doc) => doc,
   },
 
@@ -123,15 +127,20 @@ export const collectionConfig = {
       version:  payload.version,
       notes:    payload.notes,
     }),
-    // Templates are not case-specific — only form responses require a caseId
-    validate: (payload) => !payload.formType || (!['questionnaire_template', 'workflow_template'].includes(payload.formType) && !payload.caseId),
+    // Templates + questionnaire responses are not case-specific — only other form responses require a caseId
+    validate: (payload) => !payload.formType || (!['questionnaire_template', 'workflow_template', 'questionnaire_response'].includes(payload.formType) && !payload.caseId),
     // Safe query-param filters the GET list endpoint may apply
     filterFields: ['formType', 'caseId', 'status'],
     response: (doc) => ({
-      id:       doc._id,
-      formType: doc.formType,
-      status:   doc.status,
-      version:  doc.version,
+      id:        doc._id,
+      formType:  doc.formType,
+      formData:  doc.formData,
+      status:    doc.status,
+      version:   doc.version,
+      // caseId may be populated by populateConfig — always return the string _id
+      caseId:    doc.caseId?._id?.toString() ?? doc.caseId?.toString() ?? null,
+      createdAt: doc.createdAt,
+      updatedAt: doc.updatedAt,
     }),
   },
 
@@ -170,8 +179,9 @@ export const collectionConfig = {
       completedAt: payload.completedAt,
       category:    payload.category,
     }),
-    validate: (payload) => !payload.caseId || !payload.title,
-    response: (doc) => doc,
+    validate:     (payload) => !payload.caseId || !payload.title,
+    filterFields: ['caseId', 'status', 'priority', 'assignedTo', 'category'],
+    response:     (doc) => doc,
   },
 
   CaseNote: {
@@ -266,6 +276,16 @@ export const collectionConfig = {
       name:  doc.name,
       order: doc.order,
     }),
+  },
+
+  Notification: {
+    fields: (payload) => ({
+      refId: payload.refId,
+      read:  payload.read ?? true,
+    }),
+    validate:     (payload) => !payload.refId,
+    filterFields: ['refId', 'read'],
+    response:     (doc) => ({ id: doc._id, refId: doc.refId, read: doc.read, createdAt: doc.createdAt }),
   },
 
   DocType: {

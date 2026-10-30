@@ -12,6 +12,7 @@ import Attorney        from '../models/Attorney.model.js';
 import VisaType        from '../models/VisaType.model.js';
 import CaseStage       from '../models/CaseStage.model.js';
 import DocType         from '../models/DocType.model.js';
+import Notification    from '../models/Notification.model.js';
 
 const BeneficiaryService     = new MongooseService(Beneficiary);
 const PetitionerService      = new MongooseService(Petitioner);
@@ -25,6 +26,7 @@ const AttorneyService        = new MongooseService(Attorney);
 const VisaTypeService        = new MongooseService(VisaType);
 const CaseStageService       = new MongooseService(CaseStage);
 const DocTypeService         = new MongooseService(DocType);
+const NotificationService    = new MongooseService(Notification);
 
 export const services = {
   Beneficiary:     { service: BeneficiaryService,     cache: undefined },
@@ -39,4 +41,5 @@ export const services = {
   VisaType:        { service: VisaTypeService,        cache: undefined },
   CaseStage:       { service: CaseStageService,       cache: undefined },
   DocType:         { service: DocTypeService,         cache: undefined },
+  Notification:    { service: NotificationService,    cache: undefined },
 };

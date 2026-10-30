@@ -96,8 +96,8 @@ export const handlePatch = AsyncWrapper(async (req, res) => {
   const payload = config.fields ? config.fields(req.body) : req.body;
 
   const doc = await service.patch({
-    query:      { _id: id, orgId: req.user.organizationId, isDeleted: false },
-    updateData: { ...payload, updatedBy: req.user.userId },
+    query:      { _id: id, orgId: req.user.organizationId },
+    updateData: { $set: { ...payload, updatedBy: req.user.userId } },
   });
 
   res.json(ResponseHandler.success(1, doc));
@@ -108,8 +108,8 @@ export const handleDelete = AsyncWrapper(async (req, res) => {
   const service = getService(collection);
 
   const doc = await service.patch({
-    query:      { _id: id, orgId: req.user.organizationId, isDeleted: false },
-    updateData: { isDeleted: true, deletedAt: new Date(), updatedBy: req.user.userId },
+    query:      { _id: id, orgId: req.user.organizationId },
+    updateData: { $set: { isDeleted: true, deletedAt: new Date(), updatedBy: req.user.userId } },
   });
 
   res.json(ResponseHandler.success(1, doc));
