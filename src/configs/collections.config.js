@@ -123,8 +123,8 @@ export const collectionConfig = {
       version:  payload.version,
       notes:    payload.notes,
     }),
-    // Templates (questionnaire_template) are not case-specific — only responses require a caseId
-    validate: (payload) => !payload.formType || (payload.formType !== 'questionnaire_template' && !payload.caseId),
+    // Templates are not case-specific — only form responses require a caseId
+    validate: (payload) => !payload.formType || (!['questionnaire_template', 'workflow_template'].includes(payload.formType) && !payload.caseId),
     // Safe query-param filters the GET list endpoint may apply
     filterFields: ['formType', 'caseId', 'status'],
     response: (doc) => ({
