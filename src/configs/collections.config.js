@@ -320,4 +320,41 @@ export const collectionConfig = {
       isRequired: doc.isRequired,
     }),
   },
+
+  Invoice: {
+    fields: (payload) => {
+      const isObjectId = (v) => v && /^[a-f\d]{24}$/i.test(v);
+      return {
+      caseId:        isObjectId(payload.caseId)        ? payload.caseId        : undefined,
+      petitionerId:  isObjectId(payload.petitionerId)  ? payload.petitionerId  : undefined,
+      beneficiaryId: isObjectId(payload.beneficiaryId) ? payload.beneficiaryId : undefined,
+      invoiceNumber: payload.invoiceNumber || undefined,
+      type:          payload.type,
+      amount:        payload.amount !== undefined ? Number(payload.amount) : undefined,
+      paidBy:        payload.paidBy,
+      status:        payload.status,
+      dueDate:       payload.dueDate       || undefined,
+      paidDate:      payload.paidDate      || undefined,
+      notes:         payload.notes         || undefined,
+      };
+    },
+    validate: (payload) => !payload.type || payload.amount === undefined || payload.amount === null,
+    filterFields: ['caseId', 'petitionerId', 'beneficiaryId', 'status', 'type'],
+    response: (doc) => ({
+      id:            doc._id,
+      caseId:        doc.caseId?._id?.toString()        ?? doc.caseId?.toString()        ?? null,
+      petitionerId:  doc.petitionerId?._id?.toString()  ?? doc.petitionerId?.toString()  ?? null,
+      beneficiaryId: doc.beneficiaryId?._id?.toString() ?? doc.beneficiaryId?.toString() ?? null,
+      invoiceNumber: doc.invoiceNumber,
+      type:          doc.type,
+      amount:        doc.amount,
+      paidBy:        doc.paidBy,
+      status:        doc.status,
+      dueDate:       doc.dueDate,
+      paidDate:      doc.paidDate,
+      notes:         doc.notes,
+      createdAt:     doc.createdAt,
+      updatedAt:     doc.updatedAt,
+    }),
+  },
 };
