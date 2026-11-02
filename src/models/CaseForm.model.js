@@ -8,7 +8,7 @@ const caseFormSchema = new mongoose.Schema(
     formData:     { type: mongoose.Schema.Types.Mixed },
     status:       {
       type: String,
-      enum: ['draft', 'complete', 'submitted', 'reviewed', 'not_started', 'in_progress'],
+      enum: ['draft', 'complete', 'submitted', 'reviewed', 'not_started', 'in_progress', 'Draft', 'Active'],
       default: 'draft',
     },
     version:      { type: Number, default: 1 },

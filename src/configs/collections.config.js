@@ -99,8 +99,12 @@ export const collectionConfig = {
       priorityDate:  payload.priorityDate,
       filingDate:    payload.filingDate,
       receiptNumber: payload.receiptNumber,
+      filedDate:     payload.filedDate,
       approvalDate:  payload.approvalDate,
-      expiryDate:    payload.expiryDate,
+      validityFrom:  payload.validityFrom,
+      validityTo:    payload.validityTo,
+      // validityTo is the UI name for expiry; keep expiryDate in sync so compliance queries work
+      expiryDate:    payload.validityTo || payload.expiryDate,
       workLocation:  payload.workLocation,
       jobTitle:      payload.jobTitle,
       socCode:       payload.socCode,

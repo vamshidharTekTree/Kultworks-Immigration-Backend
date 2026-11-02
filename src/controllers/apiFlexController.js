@@ -38,7 +38,7 @@ export const handleFlexGet = AsyncWrapper(async (req, res) => {
           filter: {
             orgId,
             isDeleted:  { $ne: true },
-            status:     'approved',
+            status:     { $in: ['approved', 'Approved'] },
             expiryDate: { $gte: now, $lte: in60Days },
           },
         }),
@@ -66,7 +66,7 @@ export const handleFlexGet = AsyncWrapper(async (req, res) => {
         filter: {
           orgId,
           isDeleted:  { $ne: true },
-          status:     'approved',
+          status:     { $in: ['approved', 'Approved'] },
           expiryDate: { $gte: now, $lte: in90Days },
         },
         options:  { sort: { expiryDate: 1 }, limit: 100 },
