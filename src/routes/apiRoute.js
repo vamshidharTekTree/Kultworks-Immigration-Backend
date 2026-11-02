@@ -26,11 +26,14 @@ const guardFlex = (req, _res, next) => {
 };
 
 // Auth: branch based on collection —
-//   portalauthentication → public (no auth)
-//   beneficiaryportal    → portal JWT
-//   everything else      → staff JWT
+//   portalauthentication/invite  → staff JWT (action handled inside flex controller)
+//   portalauthentication (other) → public (login, register, forgot-password)
+//   beneficiaryportal            → portal JWT
+//   everything else              → staff JWT
 const routeAuth = (req, res, next) => {
   const c = req.params.collection;
+  const a = req.params.action;
+  if (c === 'portalauthentication' && a === 'invite') return AuthenticateReq(req, res, next);
   if (c === 'portalauthentication') return next();
   if (c === 'beneficiaryportal') return AuthenticatePortal(req, res, next);
   return AuthenticateReq(req, res, next);
