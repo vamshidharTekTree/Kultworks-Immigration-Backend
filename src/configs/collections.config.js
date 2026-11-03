@@ -136,7 +136,7 @@ export const collectionConfig = {
     }),
     // Templates, settings docs, and questionnaire responses are not case-specific — all others require caseId
     validate: (payload) => !payload.formType || (
-      !['questionnaire_template', 'workflow_template', 'questionnaire_response', 'letter_template', 'alert_rule', 'role_matrix',
+      !['questionnaire_template', 'workflow_template', 'questionnaire_response', 'letter_template', 'alert_rule', 'alert_resolution', 'role_matrix',
         'i9_record', 'worksite', 'job_role'].includes(payload.formType)
       && !payload.caseId
     ),
