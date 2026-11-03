@@ -1,17 +1,6 @@
 import mongoose from 'mongoose';
 import baseFieldsPlugin from './plugins/baseFields.plugin.js';
 
-const firmAddressSchema = new mongoose.Schema(
-  {
-    street:  { type: String, trim: true },
-    city:    { type: String, trim: true },
-    state:   { type: String, trim: true },
-    zip:     { type: String, trim: true },
-    country: { type: String, trim: true },
-  },
-  { _id: false }
-);
-
 const attorneySchema = new mongoose.Schema(
   {
     firstName:      { type: String, required: true, trim: true },
@@ -20,10 +9,10 @@ const attorneySchema = new mongoose.Schema(
     phone:          { type: String },
     barNumber:      { type: String },
     firmName:       { type: String },
-    firmAddress:    { type: firmAddressSchema },
+    firmAddress:    { type: String },
     licenseState:   { type: String },
-    specialization: [{ type: String }],
-    status:         { type: String, enum: ['active', 'inactive'], default: 'active' },
+    specialization: { type: String },
+    status:         { type: String, enum: ['Active', 'Inactive', 'active', 'inactive'], default: 'Active' },
     notes:          { type: String },
   },
   { timestamps: true }

@@ -86,8 +86,8 @@ export const collectionConfig = {
   ImmigrationCase: {
     fields: (payload) => ({
       visaType:  payload.visaType,
-      // caseType is the petition sub-type (new/extension/transfer/amendment/renewal), not the visa type
-      caseType:  ['new', 'extension', 'transfer', 'amendment', 'renewal'].includes(payload.caseType)
+      // caseType: petition sub-types + proxy types for lca / green_card_group / cap_registration
+      caseType:  ['new', 'extension', 'transfer', 'amendment', 'renewal', 'lca', 'green_card_group', 'cap_registration'].includes(payload.caseType)
         ? payload.caseType
         : undefined,
       status:        payload.status,
@@ -99,8 +99,12 @@ export const collectionConfig = {
       priorityDate:  payload.priorityDate,
       filingDate:    payload.filingDate,
       receiptNumber: payload.receiptNumber,
+      filedDate:     payload.filedDate,
       approvalDate:  payload.approvalDate,
-      expiryDate:    payload.expiryDate,
+      validityFrom:  payload.validityFrom,
+      validityTo:    payload.validityTo,
+      // validityTo is the UI name for expiry; keep expiryDate in sync so compliance queries work
+      expiryDate:    payload.validityTo || payload.expiryDate,
       workLocation:  payload.workLocation,
       jobTitle:      payload.jobTitle,
       socCode:       payload.socCode,
@@ -109,8 +113,12 @@ export const collectionConfig = {
       notes:         payload.notes,
       tags:          payload.tags,
       assignedTo:    payload.assignedTo,
+      metadata:      payload.metadata,
     }),
-    validate: (payload) => !payload.visaType || !payload.petitionerId || !payload.beneficiaryId,
+    // LCA has no beneficiaryId; cap_registration always sets visaType='H-1B'; other types require all three
+    validate: (payload) => !payload.petitionerId || (payload.caseType !== 'lca' && (!payload.visaType || !payload.beneficiaryId)),
+    filterFields: ['status', 'visaType', 'caseType', 'petitionerId', 'beneficiaryId', 'stage', 'assignedTo'],
+    rangeFilterFields: { expiryBefore: 'expiryDate', filingDateBefore: 'filingDate' },
     response: (doc) => doc,
   },
 
@@ -123,15 +131,23 @@ export const collectionConfig = {
       version:  payload.version,
       notes:    payload.notes,
     }),
-    // Templates are not case-specific — only form responses require a caseId
-    validate: (payload) => !payload.formType || (!['questionnaire_template', 'workflow_template'].includes(payload.formType) && !payload.caseId),
+    // Templates, settings docs, and questionnaire responses are not case-specific — all others require caseId
+    validate: (payload) => !payload.formType || (
+      !['questionnaire_template', 'workflow_template', 'questionnaire_response', 'letter_template', 'alert_rule', 'role_matrix'].includes(payload.formType)
+      && !payload.caseId
+    ),
     // Safe query-param filters the GET list endpoint may apply
     filterFields: ['formType', 'caseId', 'status'],
     response: (doc) => ({
-      id:       doc._id,
-      formType: doc.formType,
-      status:   doc.status,
-      version:  doc.version,
+      id:        doc._id,
+      formType:  doc.formType,
+      formData:  doc.formData,
+      status:    doc.status,
+      version:   doc.version,
+      // caseId may be populated by populateConfig — always return the string _id
+      caseId:    doc.caseId?._id?.toString() ?? doc.caseId?.toString() ?? null,
+      createdAt: doc.createdAt,
+      updatedAt: doc.updatedAt,
     }),
   },
 
@@ -170,8 +186,9 @@ export const collectionConfig = {
       completedAt: payload.completedAt,
       category:    payload.category,
     }),
-    validate: (payload) => !payload.caseId || !payload.title,
-    response: (doc) => doc,
+    validate:     (payload) => !payload.caseId || !payload.title,
+    filterFields: ['caseId', 'status', 'priority', 'assignedTo', 'category'],
+    response:     (doc) => doc,
   },
 
   CaseNote: {
@@ -220,10 +237,19 @@ export const collectionConfig = {
     }),
     validate: (payload) => !payload.firstName || !payload.email,
     response: (doc) => ({
-      id:       doc._id,
-      name:     `${doc.firstName} ${doc.lastName}`,
-      email:    doc.email,
-      firmName: doc.firmName,
+      id:             doc._id,
+      name:           `${doc.firstName} ${doc.lastName}`.trim(),
+      firstName:      doc.firstName,
+      lastName:       doc.lastName,
+      email:          doc.email,
+      phone:          doc.phone,
+      barNumber:      doc.barNumber,
+      firmName:       doc.firmName,
+      firmAddress:    doc.firmAddress,
+      licenseState:   doc.licenseState,
+      specialization: doc.specialization,
+      status:         doc.status,
+      notes:          doc.notes,
     }),
   },
 
@@ -268,6 +294,16 @@ export const collectionConfig = {
     }),
   },
 
+  Notification: {
+    fields: (payload) => ({
+      refId: payload.refId,
+      read:  payload.read ?? true,
+    }),
+    validate:     (payload) => !payload.refId,
+    filterFields: ['refId', 'read'],
+    response:     (doc) => ({ id: doc._id, refId: doc.refId, read: doc.read, createdAt: doc.createdAt }),
+  },
+
   DocType: {
     fields: (payload) => ({
       code:            payload.code,
@@ -286,6 +322,43 @@ export const collectionConfig = {
       code:       doc.code,
       name:       doc.name,
       isRequired: doc.isRequired,
+    }),
+  },
+
+  Invoice: {
+    fields: (payload) => {
+      const isObjectId = (v) => v && /^[a-f\d]{24}$/i.test(v);
+      return {
+      caseId:        isObjectId(payload.caseId)        ? payload.caseId        : undefined,
+      petitionerId:  isObjectId(payload.petitionerId)  ? payload.petitionerId  : undefined,
+      beneficiaryId: isObjectId(payload.beneficiaryId) ? payload.beneficiaryId : undefined,
+      invoiceNumber: payload.invoiceNumber || undefined,
+      type:          payload.type,
+      amount:        payload.amount !== undefined ? Number(payload.amount) : undefined,
+      paidBy:        payload.paidBy,
+      status:        payload.status,
+      dueDate:       payload.dueDate       || undefined,
+      paidDate:      payload.paidDate      || undefined,
+      notes:         payload.notes         || undefined,
+      };
+    },
+    validate: (payload) => !payload.type || payload.amount === undefined || payload.amount === null,
+    filterFields: ['caseId', 'petitionerId', 'beneficiaryId', 'status', 'type'],
+    response: (doc) => ({
+      id:            doc._id,
+      caseId:        doc.caseId?._id?.toString()        ?? doc.caseId?.toString()        ?? null,
+      petitionerId:  doc.petitionerId?._id?.toString()  ?? doc.petitionerId?.toString()  ?? null,
+      beneficiaryId: doc.beneficiaryId?._id?.toString() ?? doc.beneficiaryId?.toString() ?? null,
+      invoiceNumber: doc.invoiceNumber,
+      type:          doc.type,
+      amount:        doc.amount,
+      paidBy:        doc.paidBy,
+      status:        doc.status,
+      dueDate:       doc.dueDate,
+      paidDate:      doc.paidDate,
+      notes:         doc.notes,
+      createdAt:     doc.createdAt,
+      updatedAt:     doc.updatedAt,
     }),
   },
 };

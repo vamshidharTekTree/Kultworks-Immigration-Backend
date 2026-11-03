@@ -38,7 +38,7 @@ export const handleFlexGet = AsyncWrapper(async (req, res) => {
           filter: {
             orgId,
             isDeleted:  { $ne: true },
-            status:     'approved',
+            status:     { $in: ['approved', 'Approved'] },
             expiryDate: { $gte: now, $lte: in60Days },
           },
         }),
@@ -66,7 +66,7 @@ export const handleFlexGet = AsyncWrapper(async (req, res) => {
         filter: {
           orgId,
           isDeleted:  { $ne: true },
-          status:     'approved',
+          status:     { $in: ['approved', 'Approved'] },
           expiryDate: { $gte: now, $lte: in90Days },
         },
         options:  { sort: { expiryDate: 1 }, limit: 100 },
@@ -282,6 +282,42 @@ export const handleFlexPost = AsyncWrapper(async (req, res) => {
       await user.save();
 
       return res.json(ResponseHandler.success(1, { message: 'Registration complete' }));
+    }
+
+    if (action === 'invite') {
+      // Staff-only: create or re-invite a portal user for a beneficiary
+      if (!req.user) ResponseHandler.error(5, 401, 'Staff authentication required');
+      const { email, beneficiaryId: benId } = req.body;
+      if (!email) ResponseHandler.error(21, 400, 'email is required');
+
+      const inviteToken  = crypto.randomBytes(32).toString('hex');
+      const inviteExpiry = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // 7 days
+
+      let user = await PortalUser.findOne({ email: email.toLowerCase(), orgId });
+      if (user) {
+        user.inviteToken  = inviteToken;
+        user.inviteExpiry = inviteExpiry;
+        user.status       = 'invited';
+        if (benId) user.beneficiaryId = benId;
+        await user.save();
+      } else {
+        user = await PortalUser.create({
+          email:        email.toLowerCase(),
+          orgId,
+          beneficiaryId: benId || undefined,
+          inviteToken,
+          inviteExpiry,
+          status: 'invited',
+        });
+      }
+
+      logger.info(`[portal invite] token for ${email}: ${inviteToken}`);
+
+      return res.json(ResponseHandler.success(1, {
+        token:     inviteToken,
+        expiresAt: inviteExpiry,
+        registerUrl: `/im/my/register?token=${inviteToken}`,
+      }));
     }
 
     if (action === 'forgot-password') {
