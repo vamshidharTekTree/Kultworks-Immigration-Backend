@@ -62,12 +62,14 @@ export const handleFlexGet = AsyncWrapper(async (req, res) => {
       const now      = new Date();
       const in90Days = new Date(now.getTime() + 90 * 24 * 60 * 60 * 1000);
 
+      const past30 = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+      const in180Days = new Date(now.getTime() + 180 * 24 * 60 * 60 * 1000);
       const cases = await services.ImmigrationCase.service.findAll({
         filter: {
           orgId,
           isDeleted:  { $ne: true },
-          status:     { $in: ['approved', 'Approved'] },
-          expiryDate: { $gte: now, $lte: in90Days },
+          status:     { $in: ['draft', 'in_progress', 'submitted', 'approved', 'rfe', 'Approved'] },
+          expiryDate: { $gte: past30, $lte: in180Days },
         },
         options:  { sort: { expiryDate: 1 }, limit: 100 },
         populate: [
