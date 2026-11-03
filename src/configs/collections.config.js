@@ -125,30 +125,34 @@ export const collectionConfig = {
 
   CaseForm: {
     fields: (payload) => ({
-      caseId:   payload.caseId,
-      formType: payload.formType,
-      formData: payload.formData,
-      status:   payload.status,
-      version:  payload.version,
-      notes:    payload.notes,
+      caseId:        payload.caseId        || undefined,
+      petitionerId:  payload.petitionerId  || undefined,
+      beneficiaryId: payload.beneficiaryId || undefined,
+      formType:      payload.formType,
+      formData:      payload.formData,
+      status:        payload.status,
+      version:       payload.version,
+      notes:         payload.notes,
     }),
     // Templates, settings docs, and questionnaire responses are not case-specific — all others require caseId
     validate: (payload) => !payload.formType || (
-      !['questionnaire_template', 'workflow_template', 'questionnaire_response', 'letter_template', 'alert_rule', 'role_matrix'].includes(payload.formType)
+      !['questionnaire_template', 'workflow_template', 'questionnaire_response', 'letter_template', 'alert_rule', 'role_matrix',
+        'i9_record', 'worksite', 'job_role'].includes(payload.formType)
       && !payload.caseId
     ),
     // Safe query-param filters the GET list endpoint may apply
-    filterFields: ['formType', 'caseId', 'status'],
+    filterFields: ['formType', 'caseId', 'status', 'petitionerId', 'beneficiaryId'],
     response: (doc) => ({
-      id:        doc._id,
-      formType:  doc.formType,
-      formData:  doc.formData,
-      status:    doc.status,
-      version:   doc.version,
-      // caseId may be populated by populateConfig — always return the string _id
-      caseId:    doc.caseId?._id?.toString() ?? doc.caseId?.toString() ?? null,
-      createdAt: doc.createdAt,
-      updatedAt: doc.updatedAt,
+      id:            doc._id,
+      formType:      doc.formType,
+      formData:      doc.formData,
+      status:        doc.status,
+      version:       doc.version,
+      caseId:        doc.caseId?._id?.toString()        ?? doc.caseId?.toString()        ?? null,
+      petitionerId:  doc.petitionerId?._id?.toString()  ?? doc.petitionerId?.toString()  ?? null,
+      beneficiaryId: doc.beneficiaryId?._id?.toString() ?? doc.beneficiaryId?.toString() ?? null,
+      createdAt:     doc.createdAt,
+      updatedAt:     doc.updatedAt,
     }),
   },
 
