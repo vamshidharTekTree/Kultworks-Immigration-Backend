@@ -51,6 +51,7 @@ const immigrationCaseSchema = new mongoose.Schema(
     tags:          [{ type: String }],
     // Stores type-specific extra fields (LCA: prevailingWage/offeredWage/worker*; GC: chargeability/perm/i140/i485)
     metadata:      { type: mongoose.Schema.Types.Mixed },
+    fees:          { type: mongoose.Schema.Types.Mixed },
     assignedTo:    { type: String },
     lastActivityAt: { type: Date },
   },

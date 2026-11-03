@@ -5,7 +5,7 @@ export const populateConfig = {
     { path: 'attorneyId',    select: 'firstName lastName email firmName' },
   ],
   CaseForm: [
-    { path: 'caseId', select: 'caseNumber visaType status' },
+    { path: 'caseId', select: 'caseNumber visaType status beneficiaryId' },
   ],
   CaseDocument: [
     { path: 'caseId', select: 'caseNumber visaType' },
@@ -18,6 +18,14 @@ export const populateConfig = {
   ],
   CaseTimeline: [
     { path: 'caseId', select: 'caseNumber visaType status' },
+  ],
+  SiteVisit: [
+    { path: 'petitionerId', select: 'legalName email' },
+  ],
+  Packet: [
+    { path: 'caseId',        select: 'caseNumber visaType status' },
+    { path: 'beneficiaryId', select: 'firstName lastName' },
+    { path: 'petitionerId',  select: 'legalName' },
   ],
   Beneficiary: undefined,
   Petitioner:  undefined,

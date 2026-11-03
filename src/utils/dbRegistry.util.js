@@ -14,6 +14,8 @@ import CaseStage       from '../models/CaseStage.model.js';
 import DocType         from '../models/DocType.model.js';
 import Notification    from '../models/Notification.model.js';
 import Invoice        from '../models/Invoice.model.js';
+import SiteVisit      from '../models/SiteVisit.model.js';
+import Packet         from '../models/Packet.model.js';
 
 const BeneficiaryService     = new MongooseService(Beneficiary);
 const PetitionerService      = new MongooseService(Petitioner);
@@ -29,6 +31,8 @@ const CaseStageService       = new MongooseService(CaseStage);
 const DocTypeService         = new MongooseService(DocType);
 const NotificationService    = new MongooseService(Notification);
 const InvoiceService         = new MongooseService(Invoice);
+const SiteVisitService       = new MongooseService(SiteVisit);
+const PacketService          = new MongooseService(Packet);
 
 export const services = {
   Beneficiary:     { service: BeneficiaryService,     cache: undefined },
@@ -45,4 +49,6 @@ export const services = {
   DocType:         { service: DocTypeService,         cache: undefined },
   Notification:    { service: NotificationService,    cache: undefined },
   Invoice:         { service: InvoiceService,         cache: undefined },
+  SiteVisit:       { service: SiteVisitService,       cache: undefined },
+  Packet:          { service: PacketService,          cache: undefined },
 };
