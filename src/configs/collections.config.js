@@ -42,6 +42,7 @@ export const collectionConfig = {
       notes:        payload.notes        || undefined,
     }),
     validate: (payload) => !payload.firstName || !payload.lastName || !payload.email,
+    filterFields: ['currentWorkStatus', 'portalStatus', 'taxTerm', 'petitionerId'],
     response: (doc) => doc,
   },
 
@@ -80,6 +81,7 @@ export const collectionConfig = {
       notes:          payload.notes          || undefined,
     }),
     validate: (payload) => !payload.legalName && !payload.companyName,
+    filterFields: ['type', 'status'],
     response: (doc) => doc,
   },
 

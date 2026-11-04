@@ -17,7 +17,7 @@ export const handleGet = AsyncWrapper(async (req, res) => {
   // Single-item fetch when an id is in the path (respects soft-delete)
   if (id) {
     const doc = await service.findOne({
-      filter: { _id: id, orgId, isDeleted: false },
+      filter: { _id: id, orgId, isDeleted: { $ne: true } },
       populate: populateConfig[collection],
     });
     return res.json(ResponseHandler.success(1, doc));
@@ -29,7 +29,7 @@ export const handleGet = AsyncWrapper(async (req, res) => {
   const search = req.query.search;
 
   const config = collectionConfig[collection] ?? {};
-  const baseFilter = { orgId, isDeleted: false };
+  const baseFilter = { orgId, isDeleted: { $ne: true } };
   // Apply collection-declared safe filter fields from query params
   if (config.filterFields) {
     for (const field of config.filterFields) {
@@ -55,16 +55,22 @@ export const handleGet = AsyncWrapper(async (req, res) => {
     });
     total = docs.length;
   } else {
-    [docs, total] = await Promise.all([
+    let countResult;
+    [docs, countResult] = await Promise.all([
       service.findAll({
         filter:  baseFilter,
         options: { limit, skip, sort: { createdAt: -1 } },
         populate: populateConfig[collection],
       }),
-      service.count({ filter: baseFilter }),
+      service.aggregate({
+        pipeline: [{ $match: baseFilter }, { $count: 'n' }],
+        errorHandler: true,
+      }),
     ]);
+    total = countResult[0]?.n ?? 0;
   }
 
+  console.log(`[apiController] ${collection} page=${page} limit=${limit} docs=${docs.length} total=${total} filter=${JSON.stringify(baseFilter)}`);
   res.json({ ...ResponseHandler.success(1, docs), total });
 });
 

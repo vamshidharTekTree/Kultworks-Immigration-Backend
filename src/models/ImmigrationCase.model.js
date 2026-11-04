@@ -60,6 +60,39 @@ const immigrationCaseSchema = new mongoose.Schema(
 
 immigrationCaseSchema.plugin(baseFieldsPlugin);
 
+// Auto-generate caseNumber on first save if not provided
+immigrationCaseSchema.pre('save', async function (next) {
+  if (!this.isNew || this.caseNumber) return next();
+  try {
+    const year   = new Date().getFullYear();
+    const prefix = `CASE-${year}-`;
+    const agg = await this.constructor.aggregate([
+      {
+        $match: {
+          orgId:      this.orgId,
+          caseNumber: { $regex: `^${prefix}` },
+          isDeleted:  { $ne: true },
+        },
+      },
+      {
+        $group: {
+          _id:    null,
+          maxSeq: {
+            $max: {
+              $toInt: { $arrayElemAt: [{ $split: ['$caseNumber', '-'] }, -1] },
+            },
+          },
+        },
+      },
+    ]);
+    const seq        = (agg[0]?.maxSeq ?? 0) + 1;
+    this.caseNumber  = `${prefix}${String(seq).padStart(5, '0')}`;
+    next();
+  } catch {
+    next(); // non-fatal: skip number generation rather than block the save
+  }
+});
+
 immigrationCaseSchema.index({ orgId: 1, status: 1 });
 immigrationCaseSchema.index({ orgId: 1, beneficiaryId: 1 });
 immigrationCaseSchema.index({ orgId: 1, petitionerId: 1 });
