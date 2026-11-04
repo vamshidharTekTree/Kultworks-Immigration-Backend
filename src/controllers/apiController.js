@@ -2,6 +2,7 @@ import { services }         from '../utils/dbRegistry.util.js';
 import { collectionConfig } from '../configs/collections.config.js';
 import { populateConfig }   from '../configs/populates.config.js';
 import { AsyncWrapper, ResponseHandler } from '../utils/wrappers/responseWrapper.util.js';
+import { seedMasterDataForOrg } from '../utils/seedMasterData.util.js';
 
 function getService(collection) {
   const entry = services[collection];
@@ -89,9 +90,22 @@ export const handleGet = AsyncWrapper(async (req, res) => {
       }),
     ]);
     total = countResult[0]?.n ?? 0;
+
+    // Auto-seed master data for this org when the collection is empty on a plain fetch.
+    // For MasterListItem we also allow a sole `type` filter (the frontend always sends ?type=…).
+    const extraKeys = Object.keys(baseFilter).filter((k) => k !== 'orgId' && k !== 'isDeleted');
+    const isSeedable = extraKeys.length === 0 || (collection === 'MasterListItem' && extraKeys.length === 1 && extraKeys[0] === 'type');
+    if (total === 0 && !search && config.autoSeed && isSeedable) {
+      await seedMasterDataForOrg(orgId);
+      let reCount;
+      [docs, reCount] = await Promise.all([
+        service.findAll({ filter: baseFilter, options: { limit, skip, sort: { createdAt: -1 } }, populate: populateConfig[collection] }),
+        service.aggregate({ pipeline: [{ $match: baseFilter }, { $count: 'n' }], errorHandler: true }),
+      ]);
+      total = reCount[0]?.n ?? docs.length;
+    }
   }
 
-  console.log(`[apiController] ${collection} page=${page} limit=${limit} docs=${docs.length} total=${total} filter=${JSON.stringify(baseFilter)}`);
   res.json({ ...ResponseHandler.success(1, docs), total });
 });
 

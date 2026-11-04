@@ -17,6 +17,7 @@ import Invoice        from '../models/Invoice.model.js';
 import SiteVisit      from '../models/SiteVisit.model.js';
 import Packet         from '../models/Packet.model.js';
 import I9Record       from '../models/I9Record.model.js';
+import MasterListItem from '../models/MasterListItem.model.js';
 
 const BeneficiaryService     = new MongooseService(Beneficiary);
 const PetitionerService      = new MongooseService(Petitioner);
@@ -35,6 +36,7 @@ const InvoiceService         = new MongooseService(Invoice);
 const SiteVisitService       = new MongooseService(SiteVisit);
 const PacketService          = new MongooseService(Packet);
 const I9RecordService        = new MongooseService(I9Record);
+const MasterListItemService  = new MongooseService(MasterListItem);
 
 export const services = {
   Beneficiary:     { service: BeneficiaryService,     cache: undefined },
@@ -54,4 +56,5 @@ export const services = {
   SiteVisit:       { service: SiteVisitService,       cache: undefined },
   Packet:          { service: PacketService,          cache: undefined },
   I9Record:        { service: I9RecordService,        cache: undefined },
+  MasterListItem:  { service: MasterListItemService,  cache: undefined },
 };

@@ -3,7 +3,7 @@ import baseFieldsPlugin from './plugins/baseFields.plugin.js';
 
 const visaTypeSchema = new mongoose.Schema(
   {
-    code:              { type: String, required: true, unique: true },
+    code:              { type: String, required: true },
     name:              { type: String, required: true },
     category:          { type: String, enum: ['nonimmigrant', 'immigrant', 'dual_intent'] },
     description:       { type: String },
@@ -18,6 +18,7 @@ const visaTypeSchema = new mongoose.Schema(
 );
 
 visaTypeSchema.plugin(baseFieldsPlugin);
+visaTypeSchema.index({ orgId: 1, code: 1 }, { unique: true });
 
 const VisaType = mongoose.model('VisaType', visaTypeSchema);
 export default VisaType;

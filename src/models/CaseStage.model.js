@@ -3,7 +3,7 @@ import baseFieldsPlugin from './plugins/baseFields.plugin.js';
 
 const caseStageSchema = new mongoose.Schema(
   {
-    code:        { type: String, required: true, unique: true },
+    code:        { type: String, required: true },
     name:        { type: String, required: true },
     description: { type: String },
     visaTypes:   [{ type: String }],
@@ -15,6 +15,7 @@ const caseStageSchema = new mongoose.Schema(
 );
 
 caseStageSchema.plugin(baseFieldsPlugin);
+caseStageSchema.index({ orgId: 1, code: 1 }, { unique: true });
 
 const CaseStage = mongoose.model('CaseStage', caseStageSchema);
 export default CaseStage;
