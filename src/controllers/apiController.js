@@ -33,8 +33,10 @@ export const handleGet = AsyncWrapper(async (req, res) => {
   // Apply collection-declared safe filter fields from query params
   if (config.filterFields) {
     for (const field of config.filterFields) {
-      const v = req.query[field];
-      if (v !== undefined && v !== '') baseFilter[field] = v;
+      const v    = req.query[field];
+      const vNin = req.query[`${field}_nin`];
+      if (v    !== undefined && v    !== '') baseFilter[field] = v;
+      if (vNin !== undefined && vNin !== '') baseFilter[field] = { $nin: vNin.split(',') };
     }
   }
   if (config.rangeFilterFields) {
@@ -47,13 +49,32 @@ export const handleGet = AsyncWrapper(async (req, res) => {
   let docs;
   let total = 0;
   if (search) {
-    docs = await service.textSearch({
-      searchString: search,
-      filter:  baseFilter,
-      options: { limit, skip },
-      populate: populateConfig[collection],
-    });
-    total = docs.length;
+    if (config.searchFields?.length) {
+      // Regex-based partial search across declared fields
+      const re = new RegExp(search.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i');
+      const searchFilter = { ...baseFilter, $or: config.searchFields.map((f) => ({ [f]: re })) };
+      let countResult;
+      [docs, countResult] = await Promise.all([
+        service.findAll({
+          filter:  searchFilter,
+          options: { limit, skip, sort: { createdAt: -1 } },
+          populate: populateConfig[collection],
+        }),
+        service.aggregate({
+          pipeline: [{ $match: searchFilter }, { $count: 'n' }],
+          errorHandler: true,
+        }),
+      ]);
+      total = countResult[0]?.n ?? docs.length;
+    } else {
+      docs = await service.textSearch({
+        searchString: search,
+        filter:  baseFilter,
+        options: { limit, skip },
+        populate: populateConfig[collection],
+      });
+      total = docs.length;
+    }
   } else {
     let countResult;
     [docs, countResult] = await Promise.all([

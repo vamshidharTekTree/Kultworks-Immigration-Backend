@@ -7,6 +7,9 @@ export const populateConfig = {
   CaseForm: [
     { path: 'caseId', select: 'caseNumber visaType status beneficiaryId' },
   ],
+  I9Record: [
+    { path: 'beneficiaryId', select: 'firstName lastName email' },
+  ],
   CaseDocument: [
     { path: 'caseId', select: 'caseNumber visaType' },
   ],

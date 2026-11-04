@@ -43,6 +43,7 @@ export const collectionConfig = {
     }),
     validate: (payload) => !payload.firstName || !payload.lastName || !payload.email,
     filterFields: ['currentWorkStatus', 'portalStatus', 'taxTerm', 'petitionerId'],
+    searchFields: ['firstName', 'lastName', 'email'],
     response: (doc) => doc,
   },
 
@@ -82,6 +83,7 @@ export const collectionConfig = {
     }),
     validate: (payload) => !payload.legalName && !payload.companyName,
     filterFields: ['type', 'status'],
+    searchFields: ['legalName', 'tradeName', 'email'],
     response: (doc) => doc,
   },
 
@@ -136,7 +138,7 @@ export const collectionConfig = {
     }),
     // Templates, settings docs, and questionnaire responses are not case-specific — all others require caseId
     validate: (payload) => !payload.formType || (
-      !['questionnaire_template', 'workflow_template', 'questionnaire_response', 'letter_template', 'alert_rule', 'role_matrix'].includes(payload.formType)
+      !['questionnaire_template', 'workflow_template', 'questionnaire_response', 'letter_template', 'alert_rule', 'role_matrix', 'i9'].includes(payload.formType)
       && !payload.caseId
     ),
     // Safe query-param filters the GET list endpoint may apply
@@ -380,6 +382,25 @@ export const collectionConfig = {
       createdAt:     doc.createdAt,
       updatedAt:     doc.updatedAt,
     }),
+  },
+
+  I9Record: {
+    fields: (payload) => ({
+      beneficiaryId:      payload.beneficiaryId,
+      caseId:             payload.caseId             || undefined,
+      section1Date:       payload.section1Date,
+      section2Date:       payload.section2Date,
+      reverificationDate: payload.reverificationDate || undefined,
+      listADocType:       payload.listADocType       || undefined,
+      everifyStatus:      payload.everifyStatus      || 'Employment Authorized',
+      everifyDate:        payload.everifyDate        || undefined,
+      status:             payload.status             || 'Active',
+      notes:              payload.notes              || undefined,
+    }),
+    validate: (payload) => !payload.beneficiaryId || !payload.section1Date || !payload.section2Date,
+    filterFields: ['beneficiaryId', 'caseId', 'status'],
+    searchFields: [],
+    response: (doc) => doc,
   },
 
   Invoice: {
