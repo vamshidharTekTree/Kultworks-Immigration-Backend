@@ -16,6 +16,7 @@ const FLEX_COLLECTIONS = new Set([
   'casedocuments',
   'immigrationcases',
   'beneficiaries',
+  'lookups',
 ]);
 
 // Guard: only let requests through if collection is a known flex collection;
@@ -36,6 +37,7 @@ const routeAuth = (req, res, next) => {
   if (c === 'portalauthentication' && a === 'invite') return AuthenticateReq(req, res, next);
   if (c === 'portalauthentication') return next();
   if (c === 'beneficiaryportal') return AuthenticatePortal(req, res, next);
+  if (c === 'lookups') return next(); // public — no auth needed for dropdown data
   return AuthenticateReq(req, res, next);
 };
 

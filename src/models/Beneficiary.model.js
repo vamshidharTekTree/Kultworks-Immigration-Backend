@@ -1,5 +1,6 @@
 import mongoose from 'mongoose';
 import baseFieldsPlugin from './plugins/baseFields.plugin.js';
+import { WORK_STATUSES, GENDERS, MARITAL_STATUSES, TAX_TERMS, DATA_SOURCES, PORTAL_STATUSES } from '../configs/lookups.config.js';
 
 const addressSchema = new mongoose.Schema(
   {
@@ -59,15 +60,15 @@ const beneficiarySchema = new mongoose.Schema(
     phone: { type: String, trim: true },
     // Personal
     dateOfBirth:    { type: Date },
-    gender:         { type: String },
+    gender:         { type: String, enum: GENDERS },
     nationality:    { type: String },
     countryOfBirth: { type: String },
     cityOfBirth:    { type: String },
-    maritalStatus:  { type: String },
+    maritalStatus:  { type: String, enum: MARITAL_STATUSES },
     // Work status & tax
-    currentWorkStatus: { type: String },
-    taxTerm:           { type: String, enum: ['W2', 'C2C', '1099'] },
-    dataSource:        { type: String, enum: ['Manual', 'Workforce', 'ATS'], default: 'Manual' },
+    currentWorkStatus: { type: String, enum: WORK_STATUSES },
+    taxTerm:           { type: String, enum: TAX_TERMS },
+    dataSource:        { type: String, enum: DATA_SOURCES, default: 'Manual' },
     // Addresses
     address:        { type: addressSchema },
     mailingAddress: { type: addressSchema },
@@ -91,7 +92,7 @@ const beneficiarySchema = new mongoose.Schema(
     // Portal
     portalStatus: {
       type: String,
-      enum: ['Not Invited', 'Invited', 'Active', 'Suspended'],
+      enum: PORTAL_STATUSES,
       default: 'Not Invited',
     },
     openCases: { type: Number, default: 0 },

@@ -8,11 +8,21 @@ import Counter from '../models/Counter.model.js';
 import { services } from '../utils/dbRegistry.util.js';
 import logger from '../utils/logger.util.js';
 import { putFileToS3, getSignedFileUrl, SIGNED_URL_EXPIRY } from '../services/s3.service.js';
+import { getBeneficiaryKpi } from '../helpers/collections/beneficiary.helper.js';
+import { LOOKUPS } from '../configs/lookups.config.js';
 
 // Flex handlers dispatch on { collection, action } from URL params.
 
 export const handleFlexGet = AsyncWrapper(async (req, res) => {
   const { collection, action } = req.params;
+
+  // ── lookups (public — no auth) ────────────────────────────────────────────
+  if (collection === 'lookups') {
+    const values = LOOKUPS[action];
+    if (!values) ResponseHandler.error(6, 404, `Lookup key '${action}' not found`);
+    const data = values.map((v) => ({ value: v, label: v }));
+    return res.json(ResponseHandler.success(1, data));
+  }
 
   // ── dashboard ─────────────────────────────────────────────────────────────
   if (collection === 'dashboard') {
@@ -59,9 +69,7 @@ export const handleFlexGet = AsyncWrapper(async (req, res) => {
     }
 
     if (action === 'upcoming-deadlines') {
-      const now      = new Date();
-      const in90Days = new Date(now.getTime() + 90 * 24 * 60 * 60 * 1000);
-
+      const now    = new Date();
       const past30 = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
       const in180Days = new Date(now.getTime() + 180 * 24 * 60 * 60 * 1000);
       const cases = await services.ImmigrationCase.service.findAll({
@@ -180,6 +188,18 @@ export const handleFlexGet = AsyncWrapper(async (req, res) => {
     }
 
     ResponseHandler.error(6, 404, `Flex GET casedocuments/${action} not implemented`);
+  }
+
+  // ── beneficiaries ─────────────────────────────────────────────────────────
+  if (collection === 'beneficiaries') {
+    const orgId = req.user.organizationId;
+
+    if (action === 'kpi-summary') {
+      const kpi = await getBeneficiaryKpi(orgId);
+      return res.json(ResponseHandler.success(1, kpi));
+    }
+
+    ResponseHandler.error(6, 404, `Flex GET beneficiaries/${action} not implemented`);
   }
 
   // ── beneficiaryportal ─────────────────────────────────────────────────────
