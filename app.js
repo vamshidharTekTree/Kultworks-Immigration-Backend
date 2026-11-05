@@ -275,7 +275,7 @@ app.get(`/${nodeEnv}/menus`, async (req, res) => {
 const responseWrapper = (_req, res, next) => {
   const originalJson = res.json.bind(res);
   res.json = (body) => {
-    if (body && Array.isArray(body.data)) {
+    if (body && Array.isArray(body.data) && body.total === undefined) {
       body = { ...body, total: body.data.length };
     }
     return originalJson(body);

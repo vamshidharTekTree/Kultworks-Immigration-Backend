@@ -2,6 +2,7 @@ import { services }         from '../utils/dbRegistry.util.js';
 import { collectionConfig } from '../configs/collections.config.js';
 import { populateConfig }   from '../configs/populates.config.js';
 import { AsyncWrapper, ResponseHandler } from '../utils/wrappers/responseWrapper.util.js';
+import { seedMasterDataForOrg } from '../utils/seedMasterData.util.js';
 
 function getService(collection) {
   const entry = services[collection];
@@ -17,7 +18,7 @@ export const handleGet = AsyncWrapper(async (req, res) => {
   // Single-item fetch when an id is in the path (respects soft-delete)
   if (id) {
     const doc = await service.findOne({
-      filter: { _id: id, orgId, isDeleted: false },
+      filter: { _id: id, orgId, isDeleted: { $ne: true } },
       populate: populateConfig[collection],
     });
     return res.json(ResponseHandler.success(1, doc));
@@ -29,12 +30,14 @@ export const handleGet = AsyncWrapper(async (req, res) => {
   const search = req.query.search;
 
   const config = collectionConfig[collection] ?? {};
-  const baseFilter = { orgId, isDeleted: false };
+  const baseFilter = { orgId, isDeleted: { $ne: true } };
   // Apply collection-declared safe filter fields from query params
   if (config.filterFields) {
     for (const field of config.filterFields) {
-      const v = req.query[field];
-      if (v !== undefined && v !== '') baseFilter[field] = v;
+      const v    = req.query[field];
+      const vNin = req.query[`${field}_nin`];
+      if (v    !== undefined && v    !== '') baseFilter[field] = v;
+      if (vNin !== undefined && vNin !== '') baseFilter[field] = { $nin: vNin.split(',') };
     }
   }
   if (config.rangeFilterFields) {
@@ -47,22 +50,60 @@ export const handleGet = AsyncWrapper(async (req, res) => {
   let docs;
   let total = 0;
   if (search) {
-    docs = await service.textSearch({
-      searchString: search,
-      filter:  baseFilter,
-      options: { limit, skip },
-      populate: populateConfig[collection],
-    });
-    total = docs.length;
+    if (config.searchFields?.length) {
+      // Regex-based partial search across declared fields
+      const re = new RegExp(search.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i');
+      const searchFilter = { ...baseFilter, $or: config.searchFields.map((f) => ({ [f]: re })) };
+      let countResult;
+      [docs, countResult] = await Promise.all([
+        service.findAll({
+          filter:  searchFilter,
+          options: { limit, skip, sort: { createdAt: -1 } },
+          populate: populateConfig[collection],
+        }),
+        service.aggregate({
+          pipeline: [{ $match: searchFilter }, { $count: 'n' }],
+          errorHandler: true,
+        }),
+      ]);
+      total = countResult[0]?.n ?? docs.length;
+    } else {
+      docs = await service.textSearch({
+        searchString: search,
+        filter:  baseFilter,
+        options: { limit, skip },
+        populate: populateConfig[collection],
+      });
+      total = docs.length;
+    }
   } else {
-    [docs, total] = await Promise.all([
+    let countResult;
+    [docs, countResult] = await Promise.all([
       service.findAll({
         filter:  baseFilter,
         options: { limit, skip, sort: { createdAt: -1 } },
         populate: populateConfig[collection],
       }),
-      service.count({ filter: baseFilter }),
+      service.aggregate({
+        pipeline: [{ $match: baseFilter }, { $count: 'n' }],
+        errorHandler: true,
+      }),
     ]);
+    total = countResult[0]?.n ?? 0;
+
+    // Auto-seed master data for this org when the collection is empty on a plain fetch.
+    // For MasterListItem we also allow a sole `type` filter (the frontend always sends ?type=…).
+    const extraKeys = Object.keys(baseFilter).filter((k) => k !== 'orgId' && k !== 'isDeleted');
+    const isSeedable = extraKeys.length === 0 || (collection === 'MasterListItem' && extraKeys.length === 1 && extraKeys[0] === 'type');
+    if (total === 0 && !search && config.autoSeed && isSeedable) {
+      await seedMasterDataForOrg(orgId);
+      let reCount;
+      [docs, reCount] = await Promise.all([
+        service.findAll({ filter: baseFilter, options: { limit, skip, sort: { createdAt: -1 } }, populate: populateConfig[collection] }),
+        service.aggregate({ pipeline: [{ $match: baseFilter }, { $count: 'n' }], errorHandler: true }),
+      ]);
+      total = reCount[0]?.n ?? docs.length;
+    }
   }
 
   res.json({ ...ResponseHandler.success(1, docs), total });

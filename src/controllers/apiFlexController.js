@@ -95,7 +95,7 @@ export const handleFlexGet = AsyncWrapper(async (req, res) => {
     if (action === 'export-cases') {
       const { status, visaType, fromDate, toDate } = req.query;
 
-      const filter = { orgId, isDeleted: false };
+      const filter = { orgId, isDeleted: { $ne: true } };
       if (status)   filter.status   = status;
       if (visaType) filter.visaType = visaType;
       if (fromDate || toDate) {
@@ -170,7 +170,7 @@ export const handleFlexGet = AsyncWrapper(async (req, res) => {
       if (!docId) ResponseHandler.error(21, 400, 'docId query param is required');
 
       const doc = await services.CaseDocument.service.findOne({
-        filter: { _id: docId, orgId, isDeleted: false },
+        filter: { _id: docId, orgId, isDeleted: { $ne: true } },
       });
       if (!doc)              ResponseHandler.error(6, 404, 'Document not found');
       if (!doc.storagePath)  ResponseHandler.error(21, 400, 'Document has no S3 key — it may have been uploaded before S3 was enabled');
